@@ -22,7 +22,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Find Android SDK
+      - name: Configure Android SDK
         shell: bash
         run: |
           set -e
@@ -30,41 +30,22 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME"
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
 
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager 2>/dev/null | head -n 1)
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" \
+            -type f \
+            -name sdkmanager \
+            2>/dev/null | head -n 1)
 
           if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found. Installing Android command-line tools..."
-
-            mkdir -p "$ANDROID_HOME/cmdline-tools"
-
-            curl -L \
-              -o /tmp/cmdline-tools.zip \
-              https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip
-
-            rm -rf "$ANDROID_HOME/cmdline-tools/latest"
-            mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
-
-            unzip -q /tmp/cmdline-tools.zip -d /tmp/android-cmdline
-
-            mv /tmp/android-cmdline/cmdline-tools/* \
-              "$ANDROID_HOME/cmdline-tools/latest/"
-          fi
-
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
-
-          if [ -z "$SDKMANAGER" ]; then
-            echo "ERROR: sdkmanager could not be installed."
+            echo "ERROR: sdkmanager not found"
             exit 1
           fi
+
+          SDKMANAGER_DIR="$(dirname "$SDKMANAGER")"
 
           echo "Found sdkmanager at:"
           echo "$SDKMANAGER"
 
-          chmod +x "$SDKMANAGER"
-
-          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          echo "$SDKMANAGER_DIR" >> "$GITHUB_PATH"
 
       - name: Check Android SDK
         shell: bash
@@ -77,7 +58,7 @@ jobs:
       - name: Accept Android SDK licenses
         shell: bash
         run: |
-          yes | sdkmanager --licenses || true
+          yes | sdkmanager --licenses
 
       - name: Install Android SDK packages
         shell: bash
